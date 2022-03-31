@@ -48,7 +48,6 @@ services:
             net.ipv4.conf.eth0.send_redirects: '0'
 
     wireshark:
-        hostname: 'wireshark'
         image: lscr.io/linuxserver/wireshark
         container_name: wireshark
         cap_add:
