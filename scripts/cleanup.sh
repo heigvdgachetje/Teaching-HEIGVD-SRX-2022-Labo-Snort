@@ -9,3 +9,4 @@
 docker-compose down
 yes | docker image prune -a
 yes | docker builder prune
+yes | docker volume prune

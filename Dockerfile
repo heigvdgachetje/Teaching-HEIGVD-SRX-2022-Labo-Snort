@@ -2,7 +2,7 @@ FROM kalilinux/kali-rolling
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install net-tools iptables iputils-ping iproute2 wget netcat-openbsd ssh nano traceroute tcpdump lynx nmap tshark -y
+RUN apt-get update && apt-get install net-tools iptables nftables iputils-ping iproute2 wget netcat-openbsd ssh nano traceroute tcpdump lynx nmap tshark -y
 
 # Modify `sshd_config`
 RUN sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config

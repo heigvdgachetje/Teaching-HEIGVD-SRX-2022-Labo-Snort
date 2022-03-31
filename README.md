@@ -1,4 +1,4 @@
-# Teaching-HEIGVD-SRX-2021-Laboratoire-Snort
+# Teaching-HEIGVD-SRX-2022-Laboratoire-Snort
 
 **Ce travail de laboratoire est à faire en équipes de 2 personnes**
 
@@ -33,7 +33,7 @@ Clonez le repo sur votre machine. Vous pouvez répondre aux questions en modifia
 
 ## Echéance 
 
-Ce travail devra être rendu au plus tard, **le 29 avril 2021 à 23h59.**
+Ce travail devra être rendu au plus tard, **le 29 avril 2022 à 08h30.**
 
 
 ## Introduction
@@ -60,7 +60,7 @@ Vous avez besoin de votre ordinateur avec Docker et docker-compose. Vous trouver
 
 ## Démarrage de l'environnement virtuel
 
-Ce laboratoire utilise docker-compose, un outil pour la gestion d'applications utilisant multiples conteneurs. Il va se charger de créer un réseaux virtuel `lan`, la machine IDS et une machine "Client". Le réseau LAN interconnecte les deux machines (voir schéma ci-dessous).
+Ce laboratoire utilise docker-compose, un outil pour la gestion d'applications utilisant multiples conteneurs. Il va se charger de créer un réseaux virtuel `snortlan`, la machine IDS, un client avec un navigateur Firefox, une machine "Client" et un conteneur Wireshark directement connecté à la même interface réseau que la machine IDS. Le réseau LAN interconnecte les autres 3 machines (voir schéma ci-dessous).
 
 ![Plan d'adressage](images/docker-snort.png)
 
@@ -72,7 +72,7 @@ docker-compose up --detach
 
 Le téléchargement et génération des images prend peu de temps. 
 
-Les images utilisées pour les conteneurs sont basées sur l'image officielle Kali. Le fichier [Dockerfile](Dockerfile) que vous avez téléchargé contient les informations nécessaires pour la génération de l'image de base. [docker-compose.yml](docker-compose.yml) l'utilise comme un modèle pour générer les conteneurs. Vous pouvez vérifier que les deux conteneurs sont crées et qu'ils fonctionnent à l'aide de la commande suivante.
+Les images utilisées pour les conteneurs client et la machine IDS sont basées sur l'image officielle Kali. Le fichier [Dockerfile](Dockerfile) que vous avez téléchargé contient les informations nécessaires pour la génération de l'image de base. [docker-compose.yml](docker-compose.yml) l'utilise comme un modèle pour générer ces conteneurs. Les autres deux conteneurs utilisent des images du groupe LinuxServer.io. Vous pouvez vérifier que les quatre conteneurs sont crées et qu'ils fonctionnent à l'aide de la commande suivante.
 
 ```bash
 docker ps
@@ -84,6 +84,8 @@ Afin de simplifier vos manipulations, les conteneurs ont été configurées avec
 
 - IDS
 - Client
+- wireshark
+- firefox
 
 Pour accéder au terminal de l’une des machines, il suffit de taper :
 
@@ -97,26 +99,26 @@ Par exemple, pour ouvrir un terminal sur votre IDS :
 docker exec -it IDS /bin/bash
 ```
 
-Optionnelement, vous pouvez utiliser les scripts [openids.sh](scripts/openids.sh) et [openclient.sh](scripts/openclient.sh) pour contacter les conteneurs.
+Optionnelement, vous pouvez utiliser les scripts [openids.sh](scripts/openids.sh), [openfirefox.sh](scripts/openfirefox.sh) et [openclient.sh](scripts/openclient.sh) pour contacter les conteneurs.
 
 Vous pouvez bien évidemment lancer des terminaux avec les deux machines en même temps ou même lancer plusieurs terminaux sur la même machine. ***Il est en fait conseillé pour ce laboratoire de garder au moins deux terminaux ouverts sur la machine IDS en tout moment***.
 
 
-### Configuration de la machine Client
+### Configuration de la machine Client et de firefox
 
-Dans un terminal de votre machine Client, taper les commandes suivantes :
+Dans un terminal de votre machine Client et de la machine firefox, taper les commandes suivantes :
 
 ```bash
 ip route del default 
-ip route add default via 192.168.1.2
+ip route add default via 192.168.200.2
 ```
 
-Ceci configure la machine IDS comme la passerelle par défaut pour la machine Client.
+Ceci configure la machine IDS comme la passerelle par défaut pour les deux autres machines.
 
 
 ## Configuration de la machine IDS et installation de Snort
 
-Pour permettre à votre machine Client de contacter l'Internet à travers la machine IDS, il faut juste une petite règle NAT :
+Pour permettre à votre machine Client de contacter l'Internet à travers la machine IDS, il faut juste une petite règle NAT (la règle NAT qui utilise nftables peut aussi être utilisée à la place de celle-ci) :
 
 ```bash
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
@@ -129,7 +131,7 @@ On va maintenant installer Snort sur le conteneur IDS.
 La manière la plus simple c'est d'installer Snort en ligne de commandes. Il suffit d'utiliser la commande suivante :
 
 ```
-apt install snort
+apt update && apt install snort
 ```
 
 Ceci télécharge et installe la version la plus récente de Snort.
@@ -137,7 +139,7 @@ Ceci télécharge et installe la version la plus récente de Snort.
 Il est possible que vers la fin de l'installation, on vous demande de fournir deux informations :
 
 - Le nom de l'interface sur laquelle snort doit surveiller - il faudra répondre ```eth0```
-- L'adresse de votre réseau HOME. Il s'agit du réseau que vous voulez protéger. Cela sert à configurer certaines variables pour Snort. Vous pouvez répondre ```192.168.1.0/24```.
+- L'adresse de votre réseau HOME. Il s'agit du réseau que vous voulez protéger. Cela sert à configurer certaines variables pour Snort. Vous pouvez répondre ```192.168.200.0/24```.
 
 
 ## Essayer Snort
@@ -161,6 +163,7 @@ snort -v -i eth0
 Snort s'éxecute donc et montre sur l'écran tous les entêtes des paquets IP qui traversent l'interface eth0. Cette interface reçoit tout le trafic en provenance de la machine "Client" puisque nous avons configuré le IDS comme la passerelle par défaut.
 
 Pour arrêter Snort, il suffit d'utiliser `CTRL-C` (**attention** : il peut arriver de temps à autres que Snort ne réponde pas correctement au signal d'arrêt. Dans ce cas-là, il faudra utiliser `kill` depuis un deuxième terminal pour arrêter le process).
+
 
 ## Utilisation comme un IDS
 
@@ -203,19 +206,19 @@ L'entête de la règle contient l'action de la règle, le protocole, les adresse
 L'option contient des messages d'alerte et de l'information concernant les parties du paquet dont le contenu doit être analysé. Par exemple:
 
 ```
-alert tcp any any -> 192.168.1.0/24 111 (content:"|00 01 86 a5|"; msg: "mountd access";)
+alert tcp any any -> 192.168.200.0/24 111 (content:"|00 01 86 a5|"; msg: "mountd access";)
 ```
 
 Cette règle décrit une alerte générée quand Snort trouve un paquet avec tous les attributs suivants :
 
 * C'est un paquet TCP
 * Emis depuis n'importe quelle adresse et depuis n'importe quel port
-* A destination du réseau identifié par l'adresse 192.168.1.0/24 sur le port 111
+* A destination du réseau identifié par l'adresse 192.168.200.0/24 sur le port 111
 
 Le text jusqu'au premier parenthèse est l'entête de la règle. 
 
 ```
-alert tcp any any -> 192.168.1.0/24 111
+alert tcp any any -> 192.168.200.0/24 111
 ```
 
 Les parties entre parenthèses sont les options de la règle:
@@ -268,7 +271,7 @@ Un opérateur de négation peut être appliqué aux adresses IP. Cet opérateur 
 Par exemple, la règle du premier exemple peut être modifiée pour alerter pour le trafic dont l'origine est à l'extérieur du réseau :
 
 ```
-alert tcp !192.168.1.0/24 any -> 192.168.1.0/24 111
+alert tcp !192.168.200.0/24 any -> 192.168.200.0/24 111
 (content: "|00 01 86 a5|"; msg: "external mountd access";)
 ```
 
@@ -279,7 +282,7 @@ Les ports peuvent être spécifiés de différentes manières, y-compris `any`, 
 Les plages de ports utilisent l'opérateur `:`, qui peut être utilisé de différentes manières aussi :
 
 ```
-log udp any any -> 192.168.1.0/24 1:1024
+log udp any any -> 192.168.200.0/24 1:1024
 ```
 
 Journaliser le traffic UDP venant d'un port compris entre 1 et 1024.
@@ -287,7 +290,7 @@ Journaliser le traffic UDP venant d'un port compris entre 1 et 1024.
 --
 
 ```
-log tcp any any -> 192.168.1.0/24 :6000
+log tcp any any -> 192.168.200.0/24 :6000
 ```
 
 Journaliser le traffic TCP venant d'un port plus bas ou égal à 6000.
@@ -295,7 +298,7 @@ Journaliser le traffic TCP venant d'un port plus bas ou égal à 6000.
 --
 
 ```
-log tcp any :1024 -> 192.168.1.0/24 500:
+log tcp any :1024 -> 192.168.200.0/24 500:
 ```
 
 Journaliser le traffic TCP venant d'un port privilégié (bien connu) plus grand ou égal à 500 mais jusqu'au port 1024.
@@ -308,7 +311,7 @@ L'opérateur de direction `->`indique l'orientation ou la "direction" du trafiqu
 Il y a aussi un opérateur bidirectionnel, indiqué avec le symbole `<>`, utile pour analyser les deux côtés de la conversation. Par exemple un échange telnet :
 
 ```
-log 192.168.1.0/24 any <> 192.168.1.0/24 23
+log 192.168.200.0/24 any <> 192.168.200.0/24 23
 ```
 
 ## Alertes et logs Snort
@@ -322,7 +325,7 @@ Les alertes sont journalisées via syslog dans le fichier `/var/log/snort/alerts
 Avec la règle suivante :
 
 ```
-alert tcp any any -> 192.168.1.0/24 111
+alert tcp any any -> 192.168.200.0/24 111
 (content:"|00 01 86 a5|"; msg: "mountd access";)
 ```
 
@@ -390,7 +393,9 @@ sudo snort -c myrules.rules -i eth0
 
 Aller à un site web contenant dans son text la phrase ou le mot clé que vous avez choisi (il faudra chercher un peu pour trouver un site en http... Si vous n'y arrivez pas, vous pouvez utiliser [http://neverssl.com](http://neverssl.com) et modifier votre votre règle pour détecter un morceau de text contenu dans le site).
 
-**Question 5: Que voyez-vous sur votre terminal quand vous chargez le site depuis la machine Client? (vous pouvez utiliser wget pour lancer la requête http ou le navigateur Web lynx - il suffit de taper ```lynx neverssl.com```. Le navigateur lynx est un navigateur basé sur text, sans interface graphique)**
+Pour accéder à Firefox dans son conteneur, ouvrez votre navigateur web sur votre machine hôte et dirigez-le vers [http://localhost:4000](http://localhost:4000). Optionnellement, vous pouvez utiliser wget sur la machine client pour lancer la requête http ou le navigateur Web lynx - il suffit de taper ```lynx neverssl.com```. Le navigateur lynx est un navigateur basé sur text, sans interface graphique.
+
+**Question 5: Que voyez-vous sur votre terminal quand vous chargez le site depuis Firefox ou la machine Client? **
 
 ---
 
@@ -424,7 +429,7 @@ Aller au répertoire /var/log/snort. Ouvrir le fichier `alert`. Vérifier qu'il 
 
 ### Detecter une visite à Wikipedia
 
-Ecrire une règle qui journalise (sans alerter) un message à chaque fois que Wikipedia est visité **SPECIFIQUEMENT DEPUIS VOTRE MACHINE CLIENT**. Ne pas utiliser une règle qui détecte un string ou du contenu**.
+Ecrire deux règles qui journalisent (sans alerter) chacune un message à chaque fois que Wikipedia est visité **SPECIFIQUEMENT DEPUIS VOTRE MACHINE CLIENT OU DEPUIS FIREFOX**. Chaque règle doit identifier quelle machine à réalisé la visite. Ne pas utiliser une règle qui détecte un string ou du contenu. Il faudra se baser sur d'autres paramètres.
 
 **Question 8: Quelle est votre règle ? Où le message a-t'il été journalisé ? Qu'est-ce qui a été journalisé ?**
 
@@ -438,7 +443,7 @@ Ecrire une règle qui journalise (sans alerter) un message à chaque fois que Wi
 
 ### Détecter un ping d'un autre système
 
-Ecrire une règle qui alerte à chaque fois que votre machine IDS reçoit un ping depuis une autre machine (la seule autre machine que vous avez à disposition c'est la machine Client). Assurez-vous que **ça n'alerte pas** quand c'est vous qui envoyez le ping depuis l'IDS vers un autre système !
+Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un ping depuis une autre machine (n'import laquelle des autres machines de votre réseau). Assurez-vous que **ça n'alerte pas** quand c'est vous qui **envoyez** le ping depuis l'IDS vers un autre système !
 
 **Question 9: Quelle est votre règle ?**
 
@@ -466,8 +471,9 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS reçoit un pin
 
 ---
 
+Les journaux sont générés en format pcap. Vous pouvez donc les lire avec Wireshark. Vous pouvez utiliser le conteneur wireshark en dirigeant le navigateur Web de votre hôte sur vers [http://localhost:3000](http://localhost:3000). Optionnellement, vous pouvez lire les fichiers log utilisant la commande `tshark -r nom_fichier_log` depuis votre IDS.
 
-**Question 12: Qu'est-ce qui a été journalisé ? (vous pouvez lire les fichiers log utilisant la commande `tshark -r nom_fichier_log` **
+**Question 12: Qu'est-ce qui a été journalisé ? **
 
 ---
 
@@ -517,7 +523,7 @@ Essayer d'écrire une règle qui Alerte qu'une tentative de session SSH a été 
 
 ### Analyse de logs
 
-Depuis l'IDS, servez-vous de l'outil ```tshark```pour capturer du trafic dans un fichier. ```tshark``` est une version en ligne de commandes de ```Wireshark```, sans interface graphique. 
+Depuis l'IDS, servez-vous de l'outil ```tshark```pour capturer du trafic dans un fichier. ```tshark``` est une version en ligne de commandes de ```Wireshark```, sans interface graphique.
 
 Pour lancer une capture dans un fichier, utiliser la commande suivante :
 
@@ -603,14 +609,14 @@ L'outil nmap propose une option qui fragmente les messages afin d'essayer de con
 Ensuite, servez-vous du logiciel nmap pour lancer un SYN scan sur le port 22 depuis la machine Client :
 
 ```
-nmap -sS -p 22 192.168.1.2
+nmap -sS -p 22 192.168.200.2
 ```
 Vérifiez que votre règle fonctionne correctement pour détecter cette tentative. 
 
 Ensuite, modifiez votre commande nmap pour fragmenter l'attaque :
 
 ```
-nmap -sS -f -p 22 --send-eth 192.168.1.2
+nmap -sS -f -p 22 --send-eth 192.168.200.2
 ```
 
 **Question 23: Quel est le résultat de votre tentative ?**
