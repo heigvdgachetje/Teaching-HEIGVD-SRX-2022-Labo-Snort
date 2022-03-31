@@ -110,7 +110,7 @@ Dans un terminal de votre machine Client et de la machine firefox, taper les com
 
 ```bash
 ip route del default 
-ip route add default via 192.168.200.2
+ip route add default via 192.168.210.2
 ```
 
 Ceci configure la machine IDS comme la passerelle par défaut pour les deux autres machines.
@@ -141,7 +141,7 @@ Ceci télécharge et installe la version la plus récente de Snort.
 Il est possible que vers la fin de l'installation, on vous demande de fournir deux informations :
 
 - Le nom de l'interface sur laquelle snort doit surveiller - il faudra répondre ```eth0```
-- L'adresse de votre réseau HOME. Il s'agit du réseau que vous voulez protéger. Cela sert à configurer certaines variables pour Snort. Vous pouvez répondre ```192.168.200.0/24```.
+- L'adresse de votre réseau HOME. Il s'agit du réseau que vous voulez protéger. Cela sert à configurer certaines variables pour Snort. Vous pouvez répondre ```192.168.210.0/24```.
 
 
 ## Essayer Snort
@@ -208,19 +208,19 @@ L'entête de la règle contient l'action de la règle, le protocole, les adresse
 L'option contient des messages d'alerte et de l'information concernant les parties du paquet dont le contenu doit être analysé. Par exemple:
 
 ```
-alert tcp any any -> 192.168.200.0/24 111 (content:"|00 01 86 a5|"; msg: "mountd access";)
+alert tcp any any -> 192.168.210.0/24 111 (content:"|00 01 86 a5|"; msg: "mountd access";)
 ```
 
 Cette règle décrit une alerte générée quand Snort trouve un paquet avec tous les attributs suivants :
 
 * C'est un paquet TCP
 * Emis depuis n'importe quelle adresse et depuis n'importe quel port
-* A destination du réseau identifié par l'adresse 192.168.200.0/24 sur le port 111
+* A destination du réseau identifié par l'adresse 192.168.210.0/24 sur le port 111
 
 Le text jusqu'au premier parenthèse est l'entête de la règle. 
 
 ```
-alert tcp any any -> 192.168.200.0/24 111
+alert tcp any any -> 192.168.210.0/24 111
 ```
 
 Les parties entre parenthèses sont les options de la règle:
@@ -273,7 +273,7 @@ Un opérateur de négation peut être appliqué aux adresses IP. Cet opérateur 
 Par exemple, la règle du premier exemple peut être modifiée pour alerter pour le trafic dont l'origine est à l'extérieur du réseau :
 
 ```
-alert tcp !192.168.200.0/24 any -> 192.168.200.0/24 111
+alert tcp !192.168.210.0/24 any -> 192.168.210.0/24 111
 (content: "|00 01 86 a5|"; msg: "external mountd access";)
 ```
 
@@ -284,7 +284,7 @@ Les ports peuvent être spécifiés de différentes manières, y-compris `any`, 
 Les plages de ports utilisent l'opérateur `:`, qui peut être utilisé de différentes manières aussi :
 
 ```
-log udp any any -> 192.168.200.0/24 1:1024
+log udp any any -> 192.168.210.0/24 1:1024
 ```
 
 Journaliser le traffic UDP venant d'un port compris entre 1 et 1024.
@@ -292,7 +292,7 @@ Journaliser le traffic UDP venant d'un port compris entre 1 et 1024.
 --
 
 ```
-log tcp any any -> 192.168.200.0/24 :6000
+log tcp any any -> 192.168.210.0/24 :6000
 ```
 
 Journaliser le traffic TCP venant d'un port plus bas ou égal à 6000.
@@ -300,7 +300,7 @@ Journaliser le traffic TCP venant d'un port plus bas ou égal à 6000.
 --
 
 ```
-log tcp any :1024 -> 192.168.200.0/24 500:
+log tcp any :1024 -> 192.168.210.0/24 500:
 ```
 
 Journaliser le traffic TCP venant d'un port privilégié (bien connu) plus grand ou égal à 500 mais jusqu'au port 1024.
@@ -313,7 +313,7 @@ L'opérateur de direction `->`indique l'orientation ou la "direction" du trafiqu
 Il y a aussi un opérateur bidirectionnel, indiqué avec le symbole `<>`, utile pour analyser les deux côtés de la conversation. Par exemple un échange telnet :
 
 ```
-log 192.168.200.0/24 any <> 192.168.200.0/24 23
+log 192.168.210.0/24 any <> 192.168.210.0/24 23
 ```
 
 ## Alertes et logs Snort
@@ -327,7 +327,7 @@ Les alertes sont journalisées via syslog dans le fichier `/var/log/snort/alerts
 Avec la règle suivante :
 
 ```
-alert tcp any any -> 192.168.200.0/24 111
+alert tcp any any -> 192.168.210.0/24 111
 (content:"|00 01 86 a5|"; msg: "mountd access";)
 ```
 
@@ -611,14 +611,14 @@ L'outil nmap propose une option qui fragmente les messages afin d'essayer de con
 Ensuite, servez-vous du logiciel nmap pour lancer un SYN scan sur le port 22 depuis la machine Client :
 
 ```
-nmap -sS -p 22 192.168.200.2
+nmap -sS -p 22 192.168.210.2
 ```
 Vérifiez que votre règle fonctionne correctement pour détecter cette tentative. 
 
 Ensuite, modifiez votre commande nmap pour fragmenter l'attaque :
 
 ```
-nmap -sS -f -p 22 --send-eth 192.168.200.2
+nmap -sS -f -p 22 --send-eth 192.168.210.2
 ```
 
 **Question 23: Quel est le résultat de votre tentative ?**
