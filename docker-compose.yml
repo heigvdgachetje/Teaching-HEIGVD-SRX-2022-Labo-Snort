@@ -16,7 +16,7 @@ services:
             - shared-data:/var/log/snort
         networks:
            snortlan:
-             ipv4_address: 192.168.200.2
+             ipv4_address: 192.168.220.2
         command: /bin/bash
         sysctls:
             net.ipv4.conf.all.send_redirects: '0'
@@ -38,7 +38,7 @@ services:
         tty: true
         networks:
            snortlan:
-             ipv4_address: 192.168.200.3
+             ipv4_address: 192.168.220.3
         command: /bin/bash
         sysctls:
             net.ipv4.conf.all.send_redirects: '0'
@@ -74,7 +74,7 @@ services:
     #  - /path/to/config:/config
         networks:
            snortlan:
-             ipv4_address: 192.168.200.4
+             ipv4_address: 192.168.220.4
         ports:
             - 4000:3000
         shm_size: "1gb"
@@ -100,4 +100,4 @@ networks:
         ipam:
             config:
                 - 
-                 subnet: 192.168.200.0/24
+                 subnet: 192.168.220.0/24
