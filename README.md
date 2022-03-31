@@ -118,10 +118,12 @@ Ceci configure la machine IDS comme la passerelle par défaut pour les deux autr
 
 ## Configuration de la machine IDS et installation de Snort
 
-Pour permettre à votre machine Client de contacter l'Internet à travers la machine IDS, il faut juste une petite règle NAT (la règle NAT qui utilise nftables peut aussi être utilisée à la place de celle-ci) :
+Pour permettre à votre machine Client de contacter l'Internet à travers la machine IDS, il faut juste une petite règle NAT par intermédiaire de nftables :
 
 ```bash
-iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+nft add table nat
+nft 'add chain nat postrouting { type nat hook postrouting priority 100 ; }'
+nft add rule nat postrouting meta oifname "eth0" masquerade
 ```
 
 Cette commande `iptables` définit une règle dans le tableau NAT qui permet la redirection de ports et donc, l'accès à l'Internet pour la machine Client.
