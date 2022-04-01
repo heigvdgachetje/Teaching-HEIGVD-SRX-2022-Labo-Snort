@@ -31,7 +31,7 @@ Clonez le repo sur votre machine. Vous pouvez répondre aux questions en modifia
 [Cleanup](#cleanup)
 
 
-## Echéance 
+## Echéance
 
 Ce travail devra être rendu au plus tard, **le 29 avril 2022 à 08h30.**
 
@@ -48,9 +48,9 @@ Un exemple de règle pourrait être, en langage commun : "donner une alerte pour
 
 Snort est un IDS très puissant. Il est gratuit pour l'utilisation personnelle et en entreprise, où il est très utilisé aussi pour la simple raison qu'il est l'un des systèmes IDS des plus efficaces.
 
-Snort peut être exécuté comme un logiciel indépendant sur une machine ou comme un service qui tourne après chaque démarrage. Si vous voulez qu'il protège votre réseau, fonctionnant comme un IPS, il faudra l'installer "in-line" avec votre connexion Internet. 
+Snort peut être exécuté comme un logiciel indépendant sur une machine ou comme un service qui tourne après chaque démarrage. Si vous voulez qu'il protège votre réseau, fonctionnant comme un IPS, il faudra l'installer "in-line" avec votre connexion Internet.
 
-Par exemple, pour une petite entreprise avec un accès Internet avec un modem simple et un switch interconnectant une dizaine d'ordinateurs de bureau, il faudra utiliser une nouvelle machine éxecutant Snort et placée entre le modem et le switch. 
+Par exemple, pour une petite entreprise avec un accès Internet avec un modem simple et un switch interconnectant une dizaine d'ordinateurs de bureau, il faudra utiliser une nouvelle machine éxecutant Snort et placée entre le modem et le switch.
 
 
 ## Matériel
@@ -70,7 +70,7 @@ Nous allons commencer par lancer docker-compose. Il suffit de taper la commande 
 docker-compose up --detach
 ```
 
-Le téléchargement et génération des images prend peu de temps. 
+Le téléchargement et génération des images prend peu de temps.
 
 Les images utilisées pour les conteneurs client et la machine IDS sont basées sur l'image officielle Kali. Le fichier [Dockerfile](Dockerfile) que vous avez téléchargé contient les informations nécessaires pour la génération de l'image de base. [docker-compose.yml](docker-compose.yml) l'utilise comme un modèle pour générer ces conteneurs. Les autres deux conteneurs utilisent des images du groupe LinuxServer.io. Vous pouvez vérifier que les quatre conteneurs sont crées et qu'ils fonctionnent à l'aide de la commande suivante.
 
@@ -109,7 +109,7 @@ Vous pouvez bien évidemment lancer des terminaux communiquant avec toutes les m
 Dans un terminal de votre machine Client et de la machine firefox, taper les commandes suivantes :
 
 ```bash
-ip route del default 
+ip route del default
 ip route add default via 192.168.220.2
 ```
 
@@ -169,11 +169,11 @@ Pour arrêter Snort, il suffit d'utiliser `CTRL-C` (**attention** : en ligne gé
 
 ## Utilisation comme un IDS
 
-Pour enregistrer seulement les alertes et pas tout le trafic, on execute Snort en mode IDS. Il faudra donc spécifier un fichier contenant des règles. 
+Pour enregistrer seulement les alertes et pas tout le trafic, on execute Snort en mode IDS. Il faudra donc spécifier un fichier contenant des règles.
 
 Il faut noter que `/etc/snort/snort.config` contient déjà des références aux fichiers de règles disponibles avec l'installation par défaut. Si on veut tester Snort avec des règles simples, on peut créer un fichier de config personnalisé (par exemple `mysnort.conf`) et importer un seul fichier de règles utilisant la directive "include".
 
-Les fichiers de règles sont normalement stockes dans le répertoire `/etc/snort/rules/`, mais en fait un fichier de config et les fichiers de règles peuvent se trouver dans n'importe quel répertoire de la machine. 
+Les fichiers de règles sont normalement stockes dans le répertoire `/etc/snort/rules/`, mais en fait un fichier de config et les fichiers de règles peuvent se trouver dans n'importe quel répertoire de la machine.
 
 Par exemple, créez un fichier de config `mysnort.conf` dans le repertoire `/etc/snort` avec le contenu suivant :
 
@@ -217,7 +217,7 @@ Cette règle décrit une alerte générée quand Snort trouve un paquet avec tou
 * Emis depuis n'importe quelle adresse et depuis n'importe quel port
 * A destination du réseau identifié par l'adresse 192.168.220.0/24 sur le port 111
 
-Le text jusqu'au premier parenthèse est l'entête de la règle. 
+Le text jusqu'au premier parenthèse est l'entête de la règle.
 
 ```
 alert tcp any any -> 192.168.220.0/24 111
@@ -236,7 +236,7 @@ alert tcp any any -> any 21 (content:"site exec"; content:"%"; msg:"site
 exec buffer overflow attempt";)
 ```
 
-La clé "content" apparait deux fois parce que les deux strings qui doivent être détectés n'apparaissent pas concaténés dans le paquet mais a des endroits différents. Pour que la règle soit déclenchée, il faut que le paquet contienne **les deux strings** "site exec" et "%". 
+La clé "content" apparait deux fois parce que les deux strings qui doivent être détectés n'apparaissent pas concaténés dans le paquet mais a des endroits différents. Pour que la règle soit déclenchée, il faut que le paquet contienne **les deux strings** "site exec" et "%".
 
 Les éléments dans les options d'une règle sont traités comme un AND logique. La liste complète de règles sont traitées comme une succession de OR.
 
@@ -266,7 +266,7 @@ Le champ suivant c'est le protocole. Il y a trois protocoles IP qui peuvent êtr
 
 ### Adresses IP :
 
-La section suivante traite les adresses IP et les numéros de port. Le mot `any` peut être utilisé pour définir "n'import quelle adresse". On peut utiliser l'adresse d'une seule machine ou un block avec la notation CIDR. 
+La section suivante traite les adresses IP et les numéros de port. Le mot `any` peut être utilisé pour définir "n'import quelle adresse". On peut utiliser l'adresse d'une seule machine ou un block avec la notation CIDR.
 
 Un opérateur de négation peut être appliqué aux adresses IP. Cet opérateur indique à Snort d'identifier toutes les adresses IP sauf celle indiquée. L'opérateur de négation est le `!`.
 
@@ -308,7 +308,7 @@ Journaliser le traffic TCP venant d'un port privilégié (bien connu) plus grand
 
 ### Opérateur de direction
 
-L'opérateur de direction `->`indique l'orientation ou la "direction" du trafique. 
+L'opérateur de direction `->`indique l'orientation ou la "direction" du trafique.
 
 Il y a aussi un opérateur bidirectionnel, indiqué avec le symbole `<>`, utile pour analyser les deux côtés de la conversation. Par exemple un échange telnet :
 
@@ -397,7 +397,7 @@ Aller à un site web contenant dans son text la phrase ou le mot clé que vous a
 
 Pour accéder à Firefox dans son conteneur, ouvrez votre navigateur web sur votre machine hôte et dirigez-le vers [http://localhost:4000](http://localhost:4000). Optionnellement, vous pouvez utiliser wget sur la machine client pour lancer la requête http ou le navigateur Web lynx - il suffit de taper ```lynx neverssl.com```. Le navigateur lynx est un navigateur basé sur text, sans interface graphique.
 
-**Question 5: Que voyez-vous sur votre terminal quand vous chargez le site depuis Firefox ou la machine Client? **
+**Question 5: Que voyez-vous sur votre terminal quand vous chargez le site depuis Firefox ou la machine Client ?**
 
 ---
 
@@ -475,7 +475,7 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un
 
 Les journaux sont générés en format pcap. Vous pouvez donc les lire avec Wireshark. Vous pouvez utiliser le conteneur wireshark en dirigeant le navigateur Web de votre hôte sur vers [http://localhost:3000](http://localhost:3000). Optionnellement, vous pouvez lire les fichiers log utilisant la commande `tshark -r nom_fichier_log` depuis votre IDS.
 
-**Question 12: Qu'est-ce qui a été journalisé ? **
+**Question 12: Qu'est-ce qui a été journalisé ?**
 
 ---
 
@@ -513,7 +513,7 @@ Essayer d'écrire une règle qui Alerte qu'une tentative de session SSH a été 
 ---
 
 
-**Question 15: Montrer le message enregistré dans le fichier d'alertes.** 
+**Question 15: Montrer le message enregistré dans le fichier d'alertes.**
 
 ---
 
@@ -613,7 +613,7 @@ Ensuite, servez-vous du logiciel nmap pour lancer un SYN scan sur le port 22 dep
 ```
 nmap -sS -p 22 192.168.220.2
 ```
-Vérifiez que votre règle fonctionne correctement pour détecter cette tentative. 
+Vérifiez que votre règle fonctionne correctement pour détecter cette tentative.
 
 Ensuite, modifiez votre commande nmap pour fragmenter l'attaque :
 
