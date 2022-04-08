@@ -351,7 +351,17 @@ Vous pouvez aussi utiliser des captures Wireshark ou des fichiers snort.log.xxxx
 
 ---
 
-**Réponse :**  
+**Réponse :**  http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node17.html
+
+They allow the functionality of Snort to be extended by allowing users and programmers to drop modular plugins into Snort fairly easily.  Preprocessor code is run before the detection engine is called, but after the packet has been decoded. The packet can be modified or analyzed in an out-of-band manner using this mechanism.
+
+Preprocessors are loaded and configured using the `preprocessor` keyword. The format of the preprocessor directive in the Snort config file is:
+
+
+
+```
+    preprocessor <name>: <options>
+```
 
 ---
 
