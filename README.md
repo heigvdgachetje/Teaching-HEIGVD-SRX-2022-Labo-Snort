@@ -132,7 +132,7 @@ On va maintenant installer Snort sur le conteneur IDS.
 
 La manière la plus simple c'est d'installer Snort en ligne de commandes. Il suffit d'utiliser la commande suivante :
 
-```
+```bash
 apt update && apt install snort
 ```
 
@@ -150,13 +150,13 @@ Une fois installé, vous pouvez lancer Snort comme un simple "sniffer". Pourtant
 
 Snort se comporte de différentes manières en fonction des options que vous passez en ligne de commande au démarrage. Vous pouvez voir la grande liste d'options avec la commande suivante :
 
-```
+```bash
 snort --help
 ```
 
 On va commencer par observer tout simplement les entêtes des paquets IP utilisant la commande :
 
-```
+```bash
 snort -v -i eth0
 ```
 
@@ -357,8 +357,6 @@ They allow the functionality of Snort to be extended by allowing users and progr
 
 Preprocessors are loaded and configured using the `preprocessor` keyword. The format of the preprocessor directive in the Snort config file is:
 
-
-
 ```
     preprocessor <name>: <options>
 ```
@@ -369,7 +367,7 @@ Preprocessors are loaded and configured using the `preprocessor` keyword. The fo
 
 ---
 
-**Réponse :**  
+**Réponse :**  Car il n'y a pas de `preprocessor` chargé (commande `preprocessor <name>: <options>`)
 
 ---
 
@@ -385,7 +383,12 @@ alert tcp any any -> any any (msg:"Mon nom!"; content:"Rubinstein"; sid:4000015;
 
 ---
 
-**Réponse :**  
+**Réponse :**  Pour toute connexion tcp, peu importe son origine (ip/port) et destination (ip/port) une alerte est lancée si le packet contient "Rubinstein". Les options de la règle sont:
+
+* **[msg](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node31.html#SECTION00441000000000000000)**:"Mon nom!" => Message supplémentaire ajouté à l'alerte
+* **[content](https://paginas.fe.up.pt/~mgi98020/pgr/writing_snort_rules.htm#content)**:"Rubinstein" => Indique la condition pour lancer l'alerte
+* **[sid](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node31.html#SECTION00444000000000000000)**:4000015 => Identifiant unique de la règle
+* **[rev](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node31.html#SECTION00445000000000000000)**:1 => numéro de révision (unique) de la règle
 
 ---
 
@@ -400,6 +403,19 @@ sudo snort -c myrules.rules -i eth0
 ---
 
 **Réponse :**  
+
+![Q4](images/Q4.png)
+
+Nous avons:
+
+1. Les logs de l'initialisation
+2. Le compte des règles initialisées (détection, décodeur et préprocesseur)
+3. Une matrice indiquant le compte source/protocole 
+4. ???
+5. L'indication de l'ordre de traitement des règles
+6. ???
+
+
 
 ---
 

@@ -38,11 +38,12 @@ echo 'alert icmp any any -> any any (msg:"ICMP Packet"; sid:4000001; rev:3;)' > 
 EOF
 
 docker exec -i IDS /bin/bash <<- EOF
-snort -c /etc/snort/mysnort.conf
+snort -v -c /etc/snort/mysnort.conf
 EOF
 
 # From another terminal
 # docker exec -i Client ping IDS
+
 
 
 # docker exec -i IDS /bin/bash & <<- EOF
@@ -52,3 +53,17 @@ EOF
 # docker exec -i Client ping -c 5 IDS
 
 docker exec -i IDS cat /var/log/snort/alert
+
+
+docker exec -i IDS /bin/bash <<- EOF
+echo 'alert tcp any any -> any any (msg:"Fishing"; content:"Facebook"; sid:4000019; rev:1;)' > "/root/myrules.rules"
+EOF
+
+docker exec -i IDS /bin/bash <<- EOF
+snort -v -c /root/myrules.rules -i eth0
+EOF
+
+# From another terminal
+# docker exec -i Client wget -O- http://neverssl.com
+# docker exec -i Client sh -c 'while true; do wget -O- http://neverssl.com > /dev/null; done;'
+# docker exec -i Client sh -c 'while true; do wget -O- http://neverssl.com 2>1 | grep Facebook; done;'
