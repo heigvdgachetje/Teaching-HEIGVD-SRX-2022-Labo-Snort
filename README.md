@@ -511,7 +511,18 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un
 
 ---
 
-**Réponse :**  
+**Réponse :**  Les règles sont les suivantes:
+
+```bash
+pass icmp 192.168.220.2 any -> 192.168.220.3 any (sid:4000033; rev:1;)
+alert icmp any any -> 192.168.220.3 any (msg: "Someone pinged Client"; sid:4000034; rev:1;)
+```
+
+La première ignore les paquets venant de la machine IDS. Tous les autres paquets sont traités par la 2ème règle et créent donc une alerte.
+
+Il faut évidemment que les paquets transitent par la machine IDS. Pour que cela marche, il fallait s'assurer que le trafic de firefox passe par IDS. J'ai du retirer le routage direct vers le réseau interne pour ne garder que la route par défaut:
+
+![Q9_fix_firefox_traffic](images/Q9_fix_firefox_traffic.png)
 
 ---
 
@@ -520,7 +531,9 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un
 
 ---
 
-**Réponse :**  
+**Réponse :**  On veut que les paquets entrant dans la machine Client créent une alerte, il faut que l'adresse de destination soit celle de Client. Ainsi tous les paquets entrant dans Client sont traités.
+
+TODO: Est-ce qu'il est question de différencier echo/reply? Ce cas est traité par la règle normalement.
 
 ---
 
@@ -529,7 +542,7 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un
 
 ---
 
-**Réponse :**  
+**Réponse :**  Comme il s'agit d'alertes, les messages sont gardés dans `/var/log/snort/alert`
 
 ---
 
@@ -539,7 +552,11 @@ Les journaux sont générés en format pcap. Vous pouvez donc les lire avec Wire
 
 ---
 
-**Réponse :**  
+**Réponse :**  Les paquets interceptés ont été journalisés. Nous avons l'heure, l'ip(/host) source et destination, le protocole (et son type pour ICMP), l'id, la séquence et la longeur du paquet.
+
+![Q12](images/Q12.png)
+
+Nb: Nous avons utilisé tcpdump mais l'output de la commande est sensiblement la même.
 
 ---
 
@@ -553,7 +570,18 @@ Faites le nécessaire pour que les pings soient détectés dans les deux sens.
 
 ---
 
-**Réponse :**  
+**Réponse :**  Il faut rajouter les règles inverses
+
+```bash
+pass icmp 192.168.220.2 any -> 192.168.220.3 any (sid:4000033; rev:1;)
+pass icmp 192.168.220.3 any -> 192.168.220.2 any (sid:4000035; rev:1;)
+alert icmp any any -> 192.168.220.3 any (msg: "Someone pinged Client"; sid:4000034; rev:1;)
+alert icmp 192.168.220.3 any -> any any (msg: "Client answered"; sid:4000036; rev:1;)
+```
+
+![Q13](images/Q13.png)
+
+TODO: Encore une fois, faut-il vérifier les type ICMP?
 
 ---
 
@@ -568,7 +596,13 @@ Essayer d'écrire une règle qui Alerte qu'une tentative de session SSH a été 
 
 ---
 
-**Réponse :**  
+**Réponse :**  SSH est un protocole TCP généralement sur port 22. La règle doit donc bloquer les connexions TCP de la machine Client vers le port 22 de la machine IDS
+
+```bash
+alert tcp 192.168.220.3 any -> 192.168.220.2 22 (msg:"Client tried to connect to IDS using ssh"; sid:4000040; rev:1;)
+```
+
+
 
 ---
 
@@ -578,6 +612,8 @@ Essayer d'écrire une règle qui Alerte qu'une tentative de session SSH a été 
 ---
 
 **Réponse :**  
+
+![Q14](images/Q15.png)
 
 ---
 
@@ -599,7 +635,9 @@ Générez du trafic depuis le deuxième terminal qui corresponde à l'une des r�
 
 ---
 
-**Réponse :**  
+**Réponse :**  C'est l'option `-r mycapture.pcap`
+
+![Q16_tshark](images/Q16_tshark.png)
 
 ---
 
@@ -609,7 +647,8 @@ Utiliser l'option correcte de Snort pour analyser le fichier de capture Wireshar
 
 ---
 
-**Réponse :**  
+**Réponse :**  Il se comporte avec le fichier pcap comme lors de l'analyse temps réel. Il n'y a pas de différence.
+Snort va même créer le fichier de log dans `/var/log/snort` qui est une version filtrée du fichier lu.
 
 ---
 
@@ -617,7 +656,11 @@ Utiliser l'option correcte de Snort pour analyser le fichier de capture Wireshar
 
 ---
 
-**Réponse :**  
+**Réponse :**  Oui
+
+![Q18_alerts](images/Q18_alerts.png)
+
+
 
 ---
 
@@ -633,6 +676,19 @@ Faire des recherches à propos des outils `fragroute` et `fragrouter`.
 
 **Réponse :**  
 
+* **[fragroute](https://www.monkey.org/~dugsong/fragroute/)**: Il permet de manipuler le trafic entrant pour un host spécifique de plusieurs façons.
+
+  > fragroute intercepts, modifies, and rewrites egress traffic destined for a specified host [...]
+  > delay, duplicate, drop, fragment, overlap, print, reorder, segment, source-route, or otherwise monkey with all outbound packets destined for a target host
+
+  
+
+* **[fragrouter](https://linux.die.net/man/8/fragrouter)**: Il permet de modifier le routage pour contourner la plupart des IDS
+
+  > *Fragrouter* is a program for routing network traffic in such a way as to elude most network intrusion detection systems.
+
+Ces 2 outils implémentent les attaques décrites dans le document ''Insertion, Evasion, and Denial of Service: Eluding Network Intrusion Detection" (1988)
+
 ---
 
 
@@ -640,16 +696,20 @@ Faire des recherches à propos des outils `fragroute` et `fragrouter`.
 
 ---
 
-**Réponse :**  
+**Réponse :**  Ces outils repose sur la difficulté des outils de détection à traiter les variations de la fragmentation IP et à faire le réassemblage ([source](http://www.ouah.org/IP_frag.htm))
 
 ---
-
 
 **Question 21: Qu'est-ce que le `Frag3 Preprocessor` ? A quoi ça sert et comment ça fonctionne ?**
 
 ---
 
-**Réponse :**  
+**Réponse :**  C'est un préprocesseur de snort, i.e. un module permettant de traiter les paquets reçus en amont des règles définies. Frag3 preprocessor a les 2 buts suivants:
+
+* Exécution rapide avec un traitement moins complexe des données
+* Protéger des systèmes d'évasion d'IDS (comme fragroute et fragrouter)
+
+([source](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node17.html#SECTION00321000000000000000))
 
 ---
 
@@ -664,6 +724,12 @@ L'outil nmap propose une option qui fragmente les messages afin d'essayer de con
 ---
 
 **Réponse :**  
+
+```bash
+alert tcp any any -> 192.168.220.2 22 (msg:"SCAN SYN"; flags:S; sid:4000050; rev:1;)
+```
+
+Sources: [flags](https://paginas.fe.up.pt/~mgi98020/pgr/writing_snort_rules.htm#flags), [examples](https://github.com/eldondev/Snort/blob/master/rules/scan.rules), [other rules](https://www.hackingarticles.in/detect-nmap-scan-using-snort/), [prevent scan only](https://stackoverflow.com/questions/52411580/how-to-use-snort-to-detect-nmap-default-syn-scan), [flow option (not used, need stream preprocessor)](https://security.stackexchange.com/questions/158729/how-does-the-flow-option-of-snort-work)
 
 ---
 
@@ -687,17 +753,46 @@ nmap -sS -f -p 22 --send-eth 192.168.220.2
 
 **Réponse :**  
 
+Vérification que la règle fonctionne:
+
+![Q22_verification1](images/Q22_verification1.png)
+
+![Q22_verification2](images/Q22_verification2.png)
+
+Résultat de l'attaque:
+
+![Q22_attack](images/Q22_attack.png)
+
+
+
 ---
 
 
 Modifier le fichier `myrules.rules` pour que snort utiliser le `Frag3 Preprocessor` et refaire la tentative.
-
 
 **Question 24: Quel est le résultat ?**
 
 ---
 
 **Réponse :**  
+
+Configuration: Activation du préprocesseur (basé sur la configuration par défaut)
+
+```bash
+# Target-based IP defragmentation.  For more inforation, see README.frag3
+preprocessor frag3_global: max_frags 65536
+preprocessor frag3_engine: policy windows detect_anomalies overlap_limit 10 min_fragment_length 100 timeout 180
+```
+
+
+
+Résultat:
+
+![Q24_summary](images/Q24_summary.png)
+
+![Q24_alert](images/Q24_alert.png)
+
+
 
 ---
 
@@ -706,7 +801,7 @@ Modifier le fichier `myrules.rules` pour que snort utiliser le `Frag3 Preprocess
 
 ---
 
-**Réponse :**  
+**Réponse :**  Permet d'identifier plus rapidement les paquets chiffrés par SSL/TLS et d'éviter de perdre des ressources à les traiter ([source](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node17.html#SECTION003214000000000000000))
 
 ---
 
@@ -715,7 +810,7 @@ Modifier le fichier `myrules.rules` pour que snort utiliser le `Frag3 Preprocess
 
 ---
 
-**Réponse :**  
+**Réponse :**  Détecte et filtre les "Personally Identifiable Information (PII)", soit nos informations personnelles. ([source](http://manual-snort-org.s3-website-us-east-1.amazonaws.com/node17.html#SECTION003217000000000000000))
 
 ---
 
@@ -726,7 +821,7 @@ Modifier le fichier `myrules.rules` pour que snort utiliser le `Frag3 Preprocess
 
 ---
 
-**Réponse :**  
+**Réponse :**  Snort est un outil plutôt simple à configurer mais efficace. Cela permet d'avoir une très bonne visibilité du réseau sur les éléments précis plutôt que faire tourner un wireshark complet. 
 
 ---
 
