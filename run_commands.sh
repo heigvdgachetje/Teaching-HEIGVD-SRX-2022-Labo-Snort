@@ -54,16 +54,22 @@ EOF
 
 docker exec -i IDS cat /var/log/snort/alert
 
-
+# Nb: avec content:"Facebook" ça ne marchait pas mais maintenant oui
 docker exec -i IDS /bin/bash <<- EOF
-echo 'alert tcp any any -> any any (msg:"Fishing"; content:"Facebook"; sid:4000019; rev:1;)' > "/root/myrules.rules"
+echo 'alert tcp any any -> any any (msg:"Fishing"; content:"neverssl"; sid:4000019; rev:1;)' > "/root/myrules.rules"
 EOF
 
+# Nb: mieux de lancer le shell bash et de faire le stop dedans pour voir l'output
 docker exec -i IDS /bin/bash <<- EOF
-snort -v -c /root/myrules.rules -i eth0
+snort -c /root/myrules.rules -i eth0
 EOF
 
 # From another terminal
 # docker exec -i Client wget -O- http://neverssl.com
 # docker exec -i Client sh -c 'while true; do wget -O- http://neverssl.com > /dev/null; done;'
 # docker exec -i Client sh -c 'while true; do wget -O- http://neverssl.com 2>1 | grep Facebook; done;'
+
+docker exec -i IDS /bin/bash <<- EOF
+echo 'log tcp 192.168.220.3 any -> 91.198.174.192 [80,443] (msg: "Client accessed Wikipedia.org"; sid:4000023; rev:1;)' > "/root/wikipedia.rules"
+echo 'log tcp 192.168.220.4 any -> 91.198.174.192 [80,443] (msg: "Firefox accessed Wikipedia.org"; sid:4000024; rev:1;)' >> "/root/wikipedia.rules"
+EOF

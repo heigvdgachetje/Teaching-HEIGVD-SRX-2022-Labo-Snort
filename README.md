@@ -427,7 +427,9 @@ Pour accéder à Firefox dans son conteneur, ouvrez votre navigateur web sur vot
 
 ---
 
-**Réponse :**  
+**Réponse :**  On ne voit rien
+
+![Q5](images/Q5.png)
 
 ---
 
@@ -437,7 +439,15 @@ Arrêter Snort avec `CTRL-C`.
 
 ---
 
-**Réponse :**  
+**Réponse :**  Il affiche un résumé de son éxecution
+
+![Q6_1](images/Q6_1.png)
+
+![Q6_2](images/Q6_2.png)
+
+![Q6_3](images/Q6_3.png)
+
+On voit notamment que 2 alertes ont été levées
 
 ---
 
@@ -448,7 +458,19 @@ Aller au répertoire /var/log/snort. Ouvrir le fichier `alert`. Vérifier qu'il 
 
 ---
 
-**Réponse :**  
+**Réponse :**  (affiché avec la commande `cat /var/log/snort/alert | grep -A6 Fishing`)
+
+![Q7](images/Q7.png)
+
+```bash
+[**] [1:4000019:1] Fishing [**]
+[Priority: 0] 
+04/29-09:13:19.838314 192.99.200.113:80 -> 192.168.220.2:34618
+TCP TTL:46 TOS:0x18 ID:38275 IpLen:20 DgmLen:40 DF
+***A***F Seq: 0xA2C9A5F4  Ack: 0xE2927168  Win: 0xE5  TcpLen: 20
+```
+
+
 
 ---
 
@@ -464,6 +486,18 @@ Ecrire deux règles qui journalisent (sans alerter) chacune un message à chaque
 ---
 
 **Réponse :**  
+
+```bash
+log tcp 192.168.220.3 any -> 91.198.174.192 [80,443] (msg: "Client accessed Wikipedia.org"; sid:4000023; rev:1;)
+log tcp 192.168.220.4 any -> 91.198.174.192 [80,443] (msg: "Firefox accessed Wikipedia.org"; sid:4000024; rev:1;)
+
+```
+
+![Q8_snort_result](images/Q8_snort_result.png)
+
+![Q8_snort_log](images/Q8_snort_log.png)
+
+Les paquets ont été conservés dans un fichier sous /var/log/snort
 
 ---
 
