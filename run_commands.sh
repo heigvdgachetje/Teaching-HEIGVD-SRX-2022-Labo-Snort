@@ -82,8 +82,8 @@ EOF
 
 # Q9 a Q12
 docker exec -i IDS /bin/bash <<- EOF
-echo 'pass icmp 192.168.220.2 any -> 192.168.220.3 any (sid:4000033; rev:1;)' > "/root/alert_ping.rules"
-echo 'alert icmp any any -> 192.168.220.3 any (msg: "Someone pinged Client"; sid:4000034; rev:1;)' >> "/root/alert_ping.rules"
+echo 'pass icmp 192.168.220.2 any -> 192.168.220.2 any (sid:4000034; rev:1;)' > "/root/alert_ping.rules"
+echo 'alert icmp any any -> 192.168.220.2 any (itype: 8; msg: "Someone pinged IDS"; sid:4000035; rev:1;)' >> "/root/alert_ping.rules"
 EOF
 
 # Q13

@@ -410,10 +410,13 @@ Nous avons:
 
 1. Les logs de l'initialisation
 2. Le compte des règles initialisées (détection, décodeur et préprocesseur)
-3. Une matrice indiquant le compte source/protocole 
-4. ???
+3. Une matrice indiquant le nombre des protocoles utilisés dans les règles.
+4. Paramètre et configuration des différents types de filtres (detection, rate, event)
 5. L'indication de l'ordre de traitement des règles
-6. ???
+6. Résumé des performances des algorithmes de recherche([source](https://www.researchgate.net/publication/343529936_Performance_Evaluation_of_Different_Pattern_Matching_Algorithms_of_Snort))
+7. Préparer l'écoute du trafic.
+
+Fin de l'initialisation.
 
 
 
@@ -427,7 +430,7 @@ Pour accéder à Firefox dans son conteneur, ouvrez votre navigateur web sur vot
 
 ---
 
-**Réponse :**  On ne voit rien
+**Réponse :**  On ne voit rien à l'exception des warnings.
 
 ![Q5](images/Q5.png)
 
@@ -441,9 +444,17 @@ Arrêter Snort avec `CTRL-C`.
 
 **Réponse :**  Il affiche un résumé de son éxecution
 
+* Durée d’exécution et nombre de paquets traités
+* Utilisation de la mémoire (RAM).
+* Détail des paquets reçus et du traitement appliqué
+
 ![Q6_1](images/Q6_1.png)
 
+* Découpage par protocoles des paquets traités
+
 ![Q6_2](images/Q6_2.png)
+
+* Résumé des actions entreprises pour chaque paquet traité par une règle
 
 ![Q6_3](images/Q6_3.png)
 
@@ -463,17 +474,14 @@ Aller au répertoire /var/log/snort. Ouvrir le fichier `alert`. Vérifier qu'il 
 ![Q7](images/Q7.png)
 
 ```bash
-[**] [1:4000019:1] Fishing [**]
-[Priority: 0] 
-04/29-09:13:19.838314 192.99.200.113:80 -> 192.168.220.2:34618
-TCP TTL:46 TOS:0x18 ID:38275 IpLen:20 DgmLen:40 DF
-***A***F Seq: 0xA2C9A5F4  Ack: 0xE2927168  Win: 0xE5  TcpLen: 20
+[**] [1:4000019:1] Fishing [**]										# numéro:sid:revision et message de la règle
+[Priority: 0] 														# Priorité de la règle (par rapport aux autres)
+04/29-09:13:19.838314 192.99.200.113:80 -> 192.168.220.2:34618		# Timestamp, source et destination (ip:port) du paquet
+TCP TTL:46 TOS:0x18 ID:38275 IpLen:20 DgmLen:40 DF					# Infos du header ip du paquet (protocol, TTL, TOS, ID, ...)
+***A***F Seq: 0xA2C9A5F4  Ack: 0xE2927168  Win: 0xE5  TcpLen: 20	# Infos du header du protocol sous-jacent
 ```
 
-
-
 ---
-
 
 --
 
@@ -490,8 +498,9 @@ Ecrire deux règles qui journalisent (sans alerter) chacune un message à chaque
 ```bash
 log tcp 192.168.220.3 any -> 91.198.174.192 [80,443] (msg: "Client accessed Wikipedia.org"; sid:4000023; rev:1;)
 log tcp 192.168.220.4 any -> 91.198.174.192 [80,443] (msg: "Firefox accessed Wikipedia.org"; sid:4000024; rev:1;)
-
 ```
+
+Nb: `91.198.174.192` est l'adresse ip de wikipedia.org obtenue avec `nslookup`
 
 ![Q8_snort_result](images/Q8_snort_result.png)
 
@@ -514,15 +523,11 @@ Ecrire une règle qui alerte à chaque fois que votre machine IDS **reçoit** un
 **Réponse :**  Les règles sont les suivantes:
 
 ```bash
-pass icmp 192.168.220.2 any -> 192.168.220.3 any (sid:4000033; rev:1;)
-alert icmp any any -> 192.168.220.3 any (msg: "Someone pinged Client"; sid:4000034; rev:1;)
+pass icmp 192.168.220.2 any -> 192.168.220.2 any (sid:4000034; rev:1;)
+alert icmp any any -> 192.168.220.2 any (itype: 8; msg: "Someone pinged IDS"; sid:4000035; rev:1;)
 ```
 
-La première ignore les paquets venant de la machine IDS. Tous les autres paquets sont traités par la 2ème règle et créent donc une alerte.
-
-Il faut évidemment que les paquets transitent par la machine IDS. Pour que cela marche, il fallait s'assurer que le trafic de firefox passe par IDS. J'ai du retirer le routage direct vers le réseau interne pour ne garder que la route par défaut:
-
-![Q9_fix_firefox_traffic](images/Q9_fix_firefox_traffic.png)
+La première règle ignore les ping d'IDS en direction de lui-même. La deuxième règle alerte des paquets ICMP à destination de la machine IDS.
 
 ---
 
@@ -531,9 +536,7 @@ Il faut évidemment que les paquets transitent par la machine IDS. Pour que cela
 
 ---
 
-**Réponse :**  On veut que les paquets entrant dans la machine Client créent une alerte, il faut que l'adresse de destination soit celle de Client. Ainsi tous les paquets entrant dans Client sont traités.
-
-TODO: Est-ce qu'il est question de différencier echo/reply? Ce cas est traité par la règle normalement.
+**Réponse :**  On veut que les paquets entrant dans la machine IDS créent une alerte, il faut que l'adresse de destination soit celle de la machine IDS. Ainsi tous les paquets entrant dans IDS sont traités. Pour éviter que les réponses aux pings sortant d'IDS ne soient traités, il ne faut traiter que les paquets icmp de type request (8). Pour cela, il faut l'option `itype: 8`.
 
 ---
 
@@ -570,18 +573,15 @@ Faites le nécessaire pour que les pings soient détectés dans les deux sens.
 
 ---
 
-**Réponse :**  Il faut rajouter les règles inverses
+**Réponse :**  Il faut rajouter la règle inverse.
 
 ```bash
-pass icmp 192.168.220.2 any -> 192.168.220.3 any (sid:4000033; rev:1;)
-pass icmp 192.168.220.3 any -> 192.168.220.2 any (sid:4000035; rev:1;)
-alert icmp any any -> 192.168.220.3 any (msg: "Someone pinged Client"; sid:4000034; rev:1;)
-alert icmp 192.168.220.3 any -> any any (msg: "Client answered"; sid:4000036; rev:1;)
+pass icmp 192.168.220.2 any -> 192.168.220.2 any (sid:4000034; rev:1;)
+alert icmp any any -> 192.168.220.2 any (msg: "Someone pinged IDS"; sid:4000035; rev:1;)
+alert icmp 192.168.220.2 any -> any any (msg: "IDS pinged someone"; sid:4000036; rev:1;)
 ```
 
-![Q13](images/Q13.png)
-
-TODO: Encore une fois, faut-il vérifier les type ICMP?
+Nb: Nous avons enlevé le itype. De notre compréhension de la question, nous avons compris que nous devions à présent traiter les ICMP de type echo reply.
 
 ---
 
@@ -596,7 +596,7 @@ Essayer d'écrire une règle qui Alerte qu'une tentative de session SSH a été 
 
 ---
 
-**Réponse :**  SSH est un protocole TCP généralement sur port 22. La règle doit donc bloquer les connexions TCP de la machine Client vers le port 22 de la machine IDS
+**Réponse :**  SSH est un protocole TCP généralement sur port 22. La règle doit donc détecter les connexions TCP de la machine Client vers le port 22 de la machine IDS.
 
 ```bash
 alert tcp 192.168.220.3 any -> 192.168.220.2 22 (msg:"Client tried to connect to IDS using ssh"; sid:4000040; rev:1;)
@@ -696,7 +696,7 @@ Ces 2 outils implémentent les attaques décrites dans le document ''Insertion, 
 
 ---
 
-**Réponse :**  Ces outils repose sur la difficulté des outils de détection à traiter les variations de la fragmentation IP et à faire le réassemblage ([source](http://www.ouah.org/IP_frag.htm))
+**Réponse :**  Ces outils reposent sur la difficulté des outils de détection à traiter les variations de la fragmentation IP et à faire le réassemblage ([source](http://www.ouah.org/IP_frag.htm))
 
 ---
 
@@ -786,7 +786,7 @@ preprocessor frag3_engine: policy windows detect_anomalies overlap_limit 10 min_
 
 
 
-Résultat:
+Résultat de l'attaque (`nmap -sS -f -p 22 --send-eth 192.168.220.2`):
 
 ![Q24_summary](images/Q24_summary.png)
 
@@ -828,6 +828,5 @@ Résultat:
 ### Cleanup
 
 Pour nettoyer votre système et effacer les fichiers générés par Docker, vous pouvez exécuter le script [cleanup.sh](scripts/cleanup.sh). **ATTENTION : l'effet de cette commande est irréversible***.
-
 
 <sub>This guide draws heavily on http://cs.mvnu.edu/twiki/bin/view/Main/CisLab82014</sub>
