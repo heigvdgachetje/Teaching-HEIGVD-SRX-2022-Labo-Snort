@@ -135,7 +135,7 @@ La manière la plus simple c'est d'installer Snort en ligne de commandes. Il suf
 ```
 apt update && apt install snort
 ```
-
+cat 
 Ceci télécharge et installe la version la plus récente de Snort.
 
 Il est possible que vers la fin de l'installation, on vous demande de fournir deux informations :
@@ -351,7 +351,7 @@ Vous pouvez aussi utiliser des captures Wireshark ou des fichiers snort.log.xxxx
 
 ---
 
-**Réponse :**  
+**Réponse :** Les préprocesseurs ont été ajoutés à snort depuis la version 1.5 pour faciliter l'ajout de plugins modulaires à l'application. Le code des préprocesseurs est appelé après décodage du paquet, mais avant que le moteur de détection ne soit appelé. Les préprocesseurs peuvent être utilisés pour examiner les paquets pour y découvrir des activités suspectes, ou pour modifier le paquet pour que le moteur de détéction puisse les interpréter correctement.
 
 ---
 
@@ -359,7 +359,7 @@ Vous pouvez aussi utiliser des captures Wireshark ou des fichiers snort.log.xxxx
 
 ---
 
-**Réponse :**  
+**Réponse :**  Car nous n'avons configuré aucun préprocesseur dans notre fichier de configuration /etc/snort/mysnort.conf. De ce fait, aucune analyse de paquets ne pourra être faite afin de détecter si un paquet fait partie d'une attaque ou non .
 
 ---
 
@@ -375,7 +375,9 @@ alert tcp any any -> any any (msg:"Mon nom!"; content:"Rubinstein"; sid:4000015;
 
 ---
 
-**Réponse :**  
+**Réponse :**  Cette règle nous envoie une alerte avec comme message "Mon nom!" si un paquet provenant de n'importe quel réseau sur n'importe quel port, vers n'importe quel réseau sur n'importe quel port, contient le mot "Rubinstein". Cette règle a l'id 4000015 et est la première révision de cette règle.
+
+Un paquet qui arrive est donc décodé, et si son contenu contient le mot "Rubinstein", le moteur de détection lance une alerte pour nous en informer.
 
 ---
 
@@ -391,6 +393,96 @@ sudo snort -c myrules.rules -i eth0
 
 **Réponse :**  
 
+Affichage de snort quand on le lance
+
+````bash
+snort -c ~/myrules.rules -i eth0            # Commande lancée ;)                                                                                 
+Running in IDS mode                         # Mode de fonctionnement de snort
+
+        --== Initializing Snort ==--
+Initializing Output Plugins!                # Initialisation des plugins et préprocesseurs
+Initializing Preprocessors!
+Initializing Plug-ins!
+Parsing Rules file "/root/myrules.rules"    # On utilise le fichier de règles /root/myrules.rules
+Tagged Packet Limit: 256
+Log directory = /var/log/snort              # Le dosser dans lequel les logs sont enregistrés
+
++++++++++++++++++++++++++++++++++++++++++++++++++++
+Initializing rule chains...
+1 Snort rules read                          # Nombre de règles lues dans le fichier de règles
+    1 detection rules
+    0 decoder rules
+    0 preprocessor rules
+1 Option Chains linked into 1 Chain Headers
++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Résumé des règles définies par protocole
++-------------------[Rule Port Counts]---------------------------------------
+|             tcp     udp    icmp      ip
+|     src       0       0       0       0
+|     dst       0       0       0       0
+|     any       1       0       0       0
+|      nc       0       0       0       0
+|     s+d       0       0       0       0
++----------------------------------------------------------------------------
+# Paramètres du filtre de détection
++-----------------------[detection-filter-config]------------------------------
+| memory-cap : 1048576 bytes
++-----------------------[detection-filter-rules]-------------------------------
+| none
+-------------------------------------------------------------------------------
+# Paramètre du filtre de nombre de requêtes par intervalle de temps par connexion
++-----------------------[rate-filter-config]-----------------------------------
+| memory-cap : 1048576 bytes
++-----------------------[rate-filter-rules]------------------------------------
+| none
+-------------------------------------------------------------------------------
+# 
++-----------------------[event-filter-config]----------------------------------
+| memory-cap : 1048576 bytes
++-----------------------[event-filter-global]----------------------------------
++-----------------------[event-filter-local]-----------------------------------
+| none
++-----------------------[suppression]------------------------------------------
+| none
+-------------------------------------------------------------------------------
+Rule application order: pass->drop->sdrop->reject->alert->log       # Ordre d'application des règles
+Verifying Preprocessor Configurations!                              # Préprocesseur validé
+
+[ Port Based Pattern Matching Memory ]
++-[AC-BNFA Search Info Summary]------------------------------
+| Instances        : 1
+| Patterns         : 1
+| Pattern Chars    : 43
+| Num States       : 43
+| Num Match States : 1
+| Memory           :   2.34Kbytes
+|   Patterns       :   0.08K
+|   Match Lists    :   0.37K
+|   Transitions    :   1.50K
++-------------------------------------------------
+pcap DAQ configured to passive.
+Acquiring network traffic from "eth0".
+Reload thread starting...
+Reload thread started, thread 0x7f786badd640 (1172)
+Decoding Ethernet
+
+        --== Initialization Complete ==--                           # Démarrage de snort terminé
+
+   ,,_     -*> Snort! <*-                                           # Informations sur le logiciel
+  o"  )~   Version 2.9.15.1 GRE (Build 15125) 
+   ''''    By Martin Roesch & The Snort Team: http://www.snort.org/contact#team
+           Copyright (C) 2014-2019 Cisco and/or its affiliates. All rights reserved.
+           Copyright (C) 1998-2013 Sourcefire, Inc., et al.
+           Using libpcap version 1.10.1 (with TPACKET_V3)
+           Using PCRE version: 8.39 2016-06-14
+           Using ZLIB version: 1.2.11
+
+Commencing packet processing (pid=1171)
+tializing Output Plugins!
+Initializing Prepro
+````
+
+
 ---
 
 Aller à un site web contenant dans son text la phrase ou le mot clé que vous avez choisi (il faudra chercher un peu pour trouver un site en http... Si vous n'y arrivez pas, vous pouvez utiliser [http://neverssl.com](http://neverssl.com) et modifier votre votre règle pour détecter un morceau de text contenu dans le site).
@@ -401,7 +493,7 @@ Pour accéder à Firefox dans son conteneur, ouvrez votre navigateur web sur vot
 
 ---
 
-**Réponse :**  
+**Réponse :**  http://wifimouse.necta.us/
 
 ---
 
